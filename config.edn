@@ -4,5 +4,12 @@
             :connection-uri           "jdbc:mysql://localhost:3306/nflow_clj"
             :username                 "suosittelu"
             :password                 "salakala"
+
+            :auto-commit              true
+            :max-lifetime             1800000
+
+            :max-connections          4
+            :register-mbeans          false
+            :leak-detection-threshold 10000
             }
  }

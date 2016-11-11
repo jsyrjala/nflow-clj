@@ -4,6 +4,10 @@
   :dependencies [
                  [org.clojure/clojure "1.9.0-alpha14"]
 
+                 ;; business logic
+                 [cheshire "5.6.3"]
+                 [camel-snake-kebab "0.4.0"]
+
                  ;; db
                  [com.layerware/hugsql "0.4.7"]
                  [mysql/mysql-connector-java "5.1.39"]
