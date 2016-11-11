@@ -1,0 +1,8 @@
+{
+ :database {
+            :datasource-classname     "com.mysql.jdbc.jdbc2.optional.MysqlDataSource"
+            :connection-uri           "jdbc:mysql://localhost:3306/nflow_clj"
+            :username                 "suosittelu"
+            :password                 "salakala"
+            }
+ }
