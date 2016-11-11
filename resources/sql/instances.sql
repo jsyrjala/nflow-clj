@@ -9,3 +9,8 @@ insert into nflow_workflow(type, root_workflow_id, parent_workflow_id, parent_ac
 -- :doc
 insert into nflow_workflow_action(workflow_id, executor_id, type, state, state_text, retry_no, execution_start, execution_end)
 values (:workflow_id, :executor_id, :type, :state, :state_text, :retry_no, :execution_start, :execution_end);
+
+-- :name insert-state! :insert
+-- :doc
+insert into nflow_workflow_state(workflow_id, action_id, state_key, state_value)
+value (:workflow_id, :action_id, :state_key, :state_value);
