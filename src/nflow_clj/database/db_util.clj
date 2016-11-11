@@ -1,7 +1,12 @@
-(ns nflow-clj.database.db-util)
+(ns nflow-clj.database.db-util
+  (:require [camel-snake-kebab.core :refer [->kebab-case ->snake_case]]
+            [camel-snake-kebab.extras :refer [transform-keys]])
+  )
 
-;; to snake case
-(defn clj->db [x] x)
+(defn clj->db [value]
+  (->> value
+       (transform-keys ->snake_case)))
 
-;; to lisp case
-(defn db->clj [x] x)
+(defn db->clj [value]
+  (->> value
+       (transform-keys ->kebab-case)))

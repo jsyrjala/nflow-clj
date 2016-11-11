@@ -25,12 +25,11 @@
 
 (def executor {:host (util/hostname)
                :pid (util/process-id)
-               :executor_group "foo"
-               :expires_in 1000})
+               :executor-group "foo"
+               :expires-in 1000})
 
-(def executor-id (-> (executors/create-executor! db executor)
-                     :generated_key))
-
+(def executor-id (executors/create-executor! db executor))
+executor-id
 (executors/update-activity! db executor-id 3600)
 
 (def instance {

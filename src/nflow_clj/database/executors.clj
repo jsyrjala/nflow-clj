@@ -17,7 +17,8 @@
   (-> (insert-executor! db
                         (-> executor
                             db-util/clj->db))
-      db-util/db->clj))
+      db-util/db->clj
+      :generated-key))
 
 (defn update-activity! [db executor-id expires-in]
   (update-executor-activity! db
