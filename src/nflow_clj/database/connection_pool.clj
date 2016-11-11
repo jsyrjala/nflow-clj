@@ -2,10 +2,11 @@
   "Database connection pooling."
   (:require [clojure.tools.logging :as log]
             )
-  )
+  (:import (com.zaxxer.hikari HikariDataSource HikariConfig)))
 
 (defn create-hikari-pool [db-spec]
-  (let [hikari-config (new com.zaxxer.hikari.HikariConfig)
+  (log/info db-spec)
+  (let [hikari-config (new HikariConfig)
         {:keys [datasource-classname
                 max-connections
                 max-lifetime
@@ -25,4 +26,4 @@
       (.addDataSourceProperty "password" password)
       (.setRegisterMbeans register-mbeans)
       (.setLeakDetectionThreshold leak-detection-threshold))
-    (new com.zaxxer.hikari.HikariDataSource hikari-config) ))
+    {:datasource (new HikariDataSource hikari-config)}))
