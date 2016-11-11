@@ -1,6 +1,8 @@
 (ns nflow-clj.database.db-util
   (:require [camel-snake-kebab.core :refer [->kebab-case ->snake_case]]
-            [camel-snake-kebab.extras :refer [transform-keys]])
+            [camel-snake-kebab.extras :refer [transform-keys]]
+            [cheshire.core :as json]
+            )
   )
 
 (def action-types #{:nflow-action-type/stateExecution
@@ -39,3 +41,13 @@
 
 (defn inserted-id [value]
   (:generated-key value))
+
+(defn clj->json [value]
+  (when value
+    ;; TODO support converting jodatime dates to string
+    (json/generate-string value)))
+
+(defn json->clj [value]
+  (when value
+    ;; TODO support converting string to jodatime dates
+    (json/parse-string value ->kebab-case)))
