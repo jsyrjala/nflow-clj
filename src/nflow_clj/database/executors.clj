@@ -23,3 +23,9 @@
                    db
                    {:executor_id executor-id
                     :expires_in  expires-in}))
+
+(defn mark-shutdown! [db executor-group executor-id]
+  (db-util/execute update-shutdown!
+                   db
+                   {:executor-group executor-group
+                    :executor-id executor-id}))
