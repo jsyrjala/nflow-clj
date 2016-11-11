@@ -33,3 +33,10 @@ where executor_id is null and status in ( 'created', 'inProgress' )
   and executor_group = :executor_group
 order by next_activation asc
 limit :limit;
+
+
+-- :name update-reserve-instance! :! :n
+-- :doc
+update nflow_workflow
+set executor_id = :executor_id, status = 'executing', external_next_activation = null
+where id = :id and modified = :modified and executor_id is null;

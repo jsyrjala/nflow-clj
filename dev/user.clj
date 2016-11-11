@@ -56,7 +56,7 @@ executor-id
    :status             :nflow-instance-type/inProgress
    :state              "foo"
    :state_text         "foo"
-   :next_activation    nil
+   :next_activation    (time/now)
    })
 
 
@@ -89,6 +89,13 @@ instance-id
 
 (instances/store-state! db (create-state instance-id action-id "foo" "bar"))
 
+(instances/get-recoverable-instances db "foo" executor-id)
+
+(instances/get-processable-instances db "foo" 2)
+
+(def a (instances/reserve-instances db "foo" 1 1))
+
+a
 (defn create-definition [executor-group]
   {
    :type           "account221"
@@ -98,7 +105,6 @@ instance-id
    })
 
 (definitions/get-definitions db "foo")
-
 
 (definitions/store-definition! db (create-definition "foo"))
 

@@ -30,3 +30,24 @@
   (execute query-processable-instances db
            {:executor-group executor-group
             :limit limit}))
+
+(defn- try-reserving-instance! [db executor-id instance]
+  (let [reserved-count (execute update-reserve-instance! db
+                                (assoc instance :executor-id executor-id))]
+    (when (= reserved-count 1)
+      instance)))
+
+;; IMPROVE this is rather non optimal way to do reserving. Look into batching.
+(defn update-next-instances [db executor-group executor-id possible-instances]
+  (let [reserved (->> possible-instances
+                      (map #(try-reserving-instance! db executor-id %))
+                      (filter identity))]
+    (cond (= (count reserved) 0) (throw (ex-info "Race condition in polling workflow instances detected. Multiple pollers using same executor group."
+                                                 {:type           :polling-race-condition
+                                                  :executor-group executor-group}))
+          :default reserved)))
+
+(defn reserve-instances [db executor-group executor-id limit]
+  (let [processables (get-processable-instances db executor-group limit)]
+    (cond (seq processables) (update-next-instances db executor-group executor-id processables)
+          :default nil)))
