@@ -19,3 +19,9 @@
 (defn store-state! [db state]
   (-> (db-util/execute insert-state! db state)
       db-util/inserted-id))
+
+(defn get-recoverable-instances [db executor-group executor-id]
+  (db-util/execute query-recoverable-instances db
+                   {:executor-group executor-group
+                    :executor-id executor-id
+                    }))

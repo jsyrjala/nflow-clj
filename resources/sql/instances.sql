@@ -14,3 +14,12 @@ values (:workflow_id, :executor_id, :type, :state, :state_text, :retry_no, :exec
 -- :doc
 insert into nflow_workflow_state(workflow_id, action_id, state_key, state_value)
 value (:workflow_id, :action_id, :state_key, :state_value);
+
+-- :name query-recoverable-instances :*
+-- :doc
+select id, state from nflow_workflow
+where executor_id in (
+  select id from nflow_executor
+  where executor_group = :executor_group
+    and id <> :executor_id
+    and expires < current_timestamp);
