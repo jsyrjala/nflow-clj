@@ -23,3 +23,13 @@ where executor_id in (
   where executor_group = :executor_group
     and id <> :executor_id
     and expires < current_timestamp);
+
+-- :name query-processable-instances :*
+-- :doc
+select id, modified
+from nflow_workflow
+where executor_id is null and status in ( 'created', 'inProgress' )
+  and next_activation <= current_timestamp
+  and executor_group = :executor_group
+order by next_activation asc
+limit :limit;
