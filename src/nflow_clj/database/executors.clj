@@ -10,18 +10,16 @@
 (hugsql/def-db-fns "sql/executors.sql")
 
 (defn get-executors [db executor-group]
-  (-> (query-executors db {:executor_group executor-group})
-      db-util/db->clj))
+  (db-util/execute query-executors
+                   db {:executor_group executor-group}))
 
 (defn create-executor! [db executor]
-  (-> (insert-executor! db
-                        (-> executor
-                            db-util/clj->db))
-      db-util/db->clj
+  (-> (db-util/execute insert-executor!
+                       db executor)
       :generated-key))
 
 (defn update-activity! [db executor-id expires-in]
-  (update-executor-activity! db
-                             (-> {:executor_id executor-id
-                                  :expires_in expires-in}
-                                 db-util/clj->db)))
+  (db-util/execute update-executor-activity!
+                   db
+                   {:executor_id executor-id
+                    :expires_in  expires-in}))

@@ -10,3 +10,9 @@
 (defn db->clj [value]
   (->> value
        (transform-keys ->kebab-case)))
+
+(defn execute [db-command db data]
+  (-> (db-command db
+                  (-> data
+                      clj->db))
+      db->clj))
