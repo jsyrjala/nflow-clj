@@ -16,3 +16,6 @@
                   (-> data
                       clj->db))
       db->clj))
+
+(defn inserted-id [value]
+  (:generated-key value))
