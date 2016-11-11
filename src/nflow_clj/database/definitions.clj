@@ -35,3 +35,7 @@
 (defn store-definition! [db definition]
   (db-util/execute insert-definition! db
                    (-> definition add-digest)))
+
+(defn refresh-definition! [db definition]
+  (db-util/execute update-definition! db
+                   (-> definition add-digest)))
