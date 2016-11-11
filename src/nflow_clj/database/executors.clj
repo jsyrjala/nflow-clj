@@ -17,5 +17,10 @@
   (-> (insert-executor! db
                         (-> executor
                             db-util/clj->db))
-      db-util/db->clj)
-  )
+      db-util/db->clj))
+
+(defn update-activity! [db executor-id expires-in]
+  (update-executor-activity! db
+                             (-> {:executor_id executor-id
+                                  :expires_in expires-in}
+                                 db-util/clj->db)))
