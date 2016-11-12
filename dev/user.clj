@@ -47,10 +47,12 @@ executor-id
 (defn create-instance []
   {
    :type               "foo"
+   :executor-id        nil
    :root_workflow_id   nil
    :parent_workflow_id nil
    :parent_action_id   nil
    :business_key       "foo"
+   :retries            0
    :external_id        (.toString (UUID/randomUUID))
    :executor_group     "foo"
    :status             :nflow-instance-type/inProgress
@@ -59,9 +61,11 @@ executor-id
    :next_activation    (time/now)
    })
 
-
-(def instance-id (instances/store-instance! db (create-instance)))
+(def instance (create-instance))
+(def instance-id (instances/store-instance! db instance))
 instance-id
+(def stored-instance (assoc instance :workflow-id instance-id))
+stored-instance
 
 (comment
   :nflow-action-type/stateExecution
@@ -87,15 +91,27 @@ instance-id
    :state-key key
    :state-value value})
 
-(instances/store-state! db (create-state instance-id action-id "foo" "bar"))
+(instances/store-state! db (create-state instance-id action-id "foo24" "bar"))
 
 (instances/get-recoverable-instances db "foo" executor-id)
 
 (instances/get-processable-instances db "foo" 2)
 
-(def a (instances/reserve-instances db "foo" 1 1))
-
+(def a (instances/reserve-instances db "foo" executor-id 2))
 a
+
+(def action (create-action instance-id executor-id))
+(def executed-instance (assoc stored-instance :executor-id executor-id))
+(def vars [{:state-key "a" :state-value "b"}
+           {:state-key "y" :state-value "foo"}
+           ])
+(instances/update-workflow-after-execution! db executor-id executed-instance action vars)
+
+
+
+
+
+
 (defn create-definition [executor-group]
   {
    :type           "account221"
@@ -109,3 +125,5 @@ a
 (definitions/store-definition! db (create-definition "foo"))
 
 (definitions/refresh-definition! db (create-definition "foo"))
+
+(instances/get-state-variables db instance-id)

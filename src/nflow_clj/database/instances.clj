@@ -2,7 +2,7 @@
   (:require [hugsql.core :as hugsql]
             [clj-time.core :as time]
             [clojure.tools.logging :as log]
-            [cheshire.core :as json]
+            [clojure.java.jdbc :as jdbc]
             [nflow-clj.database.db-util :as db-util :refer [execute inserted-id]]
             ))
 
@@ -19,6 +19,42 @@
 (defn store-state! [db state]
   (-> (execute insert-state! db state)
       inserted-id))
+
+(defn- ensure-workflow-fields
+  "Add missing fields. hugsql requires that all fields are present. This adds required fields as nils.
+  TODO is needed?"
+  [workflow]
+  (-> workflow
+      (update-in [:executor-id] workflow)))
+
+(defn store-workflow! [db workflow]
+  (jdbc/with-db-transaction
+    [transaction db]
+    (let [workflow-id (store-instance! transaction workflow)]
+      (doseq [action (:actions workflow)]
+        (store-action! transaction (assoc action
+                                     :workflow-id workflow-id))
+        (doseq [state (:states action)]
+          (store-state! transaction (assoc state
+                                      :workflow-id workflow-id
+                                      )))))))
+
+(defn update-workflow-after-execution! [db executor-id workflow action new-state-variables]
+  (jdbc/with-db-transaction
+    [transaction db]
+    (let [workflow-id (:workflow-id workflow)
+          workflow (assoc workflow :current-executor-id executor-id)
+          workflows-updated (execute update-instance-after-execution! transaction workflow)
+          _ (assert (= 1 workflows-updated)
+                    (format "Updating workflow didn't work for workflow %s, updated %s rows."
+                            workflow workflows-updated))
+          action-id (store-action! transaction (assoc action
+                                                 :workflow-id workflow-id))]
+      (doseq [state new-state-variables]
+        (store-state! transaction (assoc state
+                                    :workflow-id workflow-id
+                                    :action-id action-id)))
+      action-id)))
 
 (defn get-recoverable-instances [db executor-group executor-id]
   (execute query-recoverable-instances db
@@ -48,6 +84,21 @@
           :default reserved)))
 
 (defn reserve-instances [db executor-group executor-id limit]
-  (let [processables (get-processable-instances db executor-group limit)]
-    (cond (seq processables) (update-next-instances db executor-group executor-id processables)
-          :default nil)))
+  (jdbc/with-db-transaction
+    [transaction db]
+    (let [processables (get-processable-instances transaction executor-group limit)]
+      (cond (seq processables) (update-next-instances transaction executor-group executor-id processables)
+            :default nil))))
+
+;; READ
+(defn- reconstruct-state-vars [states]
+  (reduce (fn [acc state]
+            (let [{:keys [action-id state-key state-value]} state]
+              (update-in acc [action-id state-key] (constantly state-value))))
+          {}
+          states))
+
+(defn get-state-variables [db instance-id]
+  (->> (execute query-state db {:instance-id instance-id})
+       (map reconstruct-state-vars)
+      ))

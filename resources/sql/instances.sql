@@ -40,3 +40,23 @@ limit :limit;
 update nflow_workflow
 set executor_id = :executor_id, status = 'executing', external_next_activation = null
 where id = :id and modified = :modified and executor_id is null;
+
+-- :name query-state :*
+-- :doc
+select *
+from nflow_workflow_state
+where workflow_id = :instance_id
+order by action_id, state_key asc;
+
+
+-- :name update-instance-after-execution! :! :n
+-- :doc
+update nflow_workflow
+set status = :status, state = :state, state_text = :state_text, next_activation = (
+  case
+    when :next_activation is null then null
+    when external_next_activation is null then :next_activation
+    else least(:next_activation, external_next_activation) end),
+external_next_activation = null, executor_id = :executor_id, retries = :retries
+where id = :workflow_id
+and executor_id = :current_executor_id;
