@@ -12,4 +12,21 @@
             :register-mbeans          false
             :leak-detection-threshold 10000
             }
+
+ :engine {
+          :executor-group "foo"
+          :no-work-sleep 2000
+          :work-sleep 100
+          :executor-expires 60000
+          :batch-size 10
+          }
+
+ :workflows {
+             :order-management/akuankka-tilaus
+             {
+              :accounting-api "http://www.example.com/accounting"
+              :press-api "http://www.example.com/press"
+              :smtp-server "mail.example.com"
+              }
+             }
  }

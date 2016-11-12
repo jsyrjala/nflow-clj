@@ -59,6 +59,7 @@
             }))
 
 (defn get-processable-instances [db executor-group limit]
+  (log/info "prosessables" executor-group limit)
   (execute query-processable-instances db
            {:executor-group executor-group
             :limit limit}))

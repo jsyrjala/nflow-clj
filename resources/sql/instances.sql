@@ -28,9 +28,10 @@ where executor_id in (
 -- :doc
 select id, modified
 from nflow_workflow
-where executor_id is null and status in ( 'created', 'inProgress' )
-  and next_activation <= current_timestamp
-  and executor_group = :executor_group
+where executor_id is NULL
+and status in ('created', 'inProgress')
+and next_activation <= current_timestamp
+and executor_group = :executor_group
 order by next_activation asc
 limit :limit;
 
