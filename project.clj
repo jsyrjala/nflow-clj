@@ -2,7 +2,7 @@
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :dependencies [
-                 [org.clojure/clojure "1.9.0-alpha14"]
+                 [org.clojure/clojure "1.8.0"]
 
                  ;; business logic
                  [cheshire "5.6.3"]
