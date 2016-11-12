@@ -26,7 +26,7 @@ where executor_id in (
 
 -- :name query-processable-instances :*
 -- :doc
-select id, modified
+select id, modified, type, state
 from nflow_workflow
 where executor_id is NULL
 and status in ('created', 'inProgress')

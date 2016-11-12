@@ -19,6 +19,8 @@
           :work-sleep 100
           :executor-expires 60000
           :batch-size 10
+          :max-retries 10
+          :retry-delay 1000
           }
 
  :workflows {

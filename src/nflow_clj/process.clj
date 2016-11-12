@@ -4,10 +4,12 @@
             ))
 
 (defn start [ctx]
+  (log/info "start")
   {:next-state :read-subscription
    :next-activation (time/now)})
 
 (defn read-subscription [ctx]
+  (log/info "read-subscription")
   {:next-state :update-accounting
    :next-activation (time/now)})
 
@@ -46,46 +48,46 @@
               :description "Aku Ankan tilausprosessi"
               :error-state :error
               :states [
-                       {:id :start
+                       {:state-id :start
                         :name "aloitus"
                         :execute-fn start
                         :next-states [:read-subcription]
                         :status :nflow-instance-type/inProgress
                         }
-                       {:id :read-subcription
+                       {:state-id :read-subcription
                         :name "lue tilaus"
                         :execute-fn read-subscription
                         :next-states [:update-accounting :manual-handling]
                         :status :nflow-instance-type/inProgress
                         }
-                       {:id :update-accounting
+                       {:state-id :update-accounting
                         :name "paivita laskutus"
                         :execute-fn update-accounting
                         :next-states [:update-press :manual-handling]
                         :status :nflow-instance-type/inProgress
                         }
-                       {:id :update-press
+                       {:state-id :update-press
                         :name "paivita kirjapaino"
                         :execute-fn update-press
                         :next-states [:send-email :manual-handling]
                         :status :nflow-instance-type/inProgress
                         }
-                       {:id :send-email
+                       {:state-id :send-email
                         :name "lähetä vahvistusemail"
                         :execute-fn send-email
                         :next-states [:finished]
                         :status :nflow-instance-type/inProgress}
-                       {:id         :manual-handling
+                       {:state-id         :manual-handling
                         :name       "manuaalikäsittely"
                         :execute-fn manual-processing
                         :status     :nflow-instance-type/manual
                         }
-                       {:id :error
+                       {:state-id :error
                         :name "virhetila"
                         :execute-fn error
                         :status :nflow-instance-type/manual
                         }
-                       {:id :finished
+                       {:state-id :finished
                         :execute-fn finished
                         :name "Prosessi valmis"
                         :status :nflow-instance-type/finished
