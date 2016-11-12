@@ -20,24 +20,20 @@
   (-> (execute insert-state! db state)
       inserted-id))
 
-(defn- ensure-workflow-fields
-  "Add missing fields. hugsql requires that all fields are present. This adds required fields as nils.
-  TODO is needed?"
-  [workflow]
-  (-> workflow
-      (update-in [:executor-id] workflow)))
-
 (defn store-workflow! [db workflow]
   (jdbc/with-db-transaction
     [transaction db]
     (let [workflow-id (store-instance! transaction workflow)]
       (doseq [action (:actions workflow)]
-        (store-action! transaction (assoc action
-                                     :workflow-id workflow-id))
-        (doseq [state (:states action)]
-          (store-state! transaction (assoc state
-                                      :workflow-id workflow-id
-                                      )))))))
+        (let [action-id
+              (store-action! transaction (assoc action
+                                           :workflow-id workflow-id))]
+          (doseq [state (:variables action)]
+            (store-state! transaction (assoc state
+                                        :action-id action-id
+                                        :workflow-id workflow-id
+                                        )))))
+      workflow-id)))
 
 (defn update-workflow-after-execution! [db executor-id workflow action new-state-variables]
   (jdbc/with-db-transaction

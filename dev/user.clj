@@ -74,14 +74,14 @@ stored-instance
   :nflow-action-type/externalChange )
 
 (defn create-action [workflow-id executor-id]
-  {:workflow_id workflow-id
-   :executor_id executor-id
+  {:workflow-id workflow-id
+   :executor-id executor-id
    :type :nflow-action-type/stateExecution
    :state "foo"
-   :state_text "bad foo"
-   :retry_no 0
-   :execution_start (time/now)
-   :execution_end (time/now)})
+   :state-text "bad foo"
+   :retry-no 0
+   :execution-start (time/now)
+   :execution-end (time/now)})
 
 (def action-id (instances/store-action! db (create-action instance-id executor-id)))
 
@@ -108,9 +108,12 @@ a
 (instances/update-workflow-after-execution! db executor-id executed-instance action vars)
 
 
+(def new-instance (assoc (create-instance)
+                    :actions [(assoc action
+                                :variables vars)]))
+action
 
-
-
+(instances/store-workflow! db new-instance)
 
 (defn create-definition [executor-group]
   {
