@@ -2,7 +2,7 @@
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :dependencies [
-                 [org.clojure/clojure "1.8.0"]
+                 [org.clojure/clojure "1.9.0-alpha14"]
 
                  ;; business logic
                  [cheshire "5.6.3"]
@@ -12,7 +12,7 @@
                  [com.layerware/hugsql "0.4.7"]
                  [mysql/mysql-connector-java "5.1.39"]
                  [com.zaxxer/HikariCP "2.5.1"]
-                 [com.climate/claypoole "1.1.3"]
+                 [com.climate/claypoole "1.1.4"]
 
                  ;; Logging
                  [org.clojure/tools.logging "0.3.1"]
