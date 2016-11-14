@@ -8,11 +8,25 @@
 
 (hugsql/def-db-fns "sql/instances.sql")
 
+(defn- get-actions [db workflow-id]
+  (-> (execute query-actions db {:workflow-id workflow-id}))
+  )
+
+(defn get-workflow [db workflow-id]
+  ;; TODO convert status field to keyword
+  (let [workflow (-> (execute query-instance db {:workflow-id workflow-id})
+                     first)
+        actions (get-actions db (:id workflow))]
+    (assoc workflow :actions actions
+                    :workflow-id (:id workflow))
+    ))
+
 (defn store-instance! [db instance]
   (-> (execute insert-instance! db instance)
       inserted-id))
 
 (defn store-action! [db action]
+  (log/info "store" action (type (:type action)))
   (-> (execute insert-action! db action)
       inserted-id))
 

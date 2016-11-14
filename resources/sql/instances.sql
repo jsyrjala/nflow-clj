@@ -24,6 +24,16 @@ where executor_id in (
     and id <> :executor_id
     and expires < current_timestamp);
 
+-- :name query-instance :*
+-- :doc
+select * from nflow_workflow
+where id = :workflow_id;
+
+-- :name query-actions :*
+-- :doc
+select * from nflow_workflow_action
+where workflow_id = :workflow_id;
+
 -- :name query-processable-instances :*
 -- :doc
 select id, modified, type, state

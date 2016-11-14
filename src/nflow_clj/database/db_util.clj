@@ -22,6 +22,7 @@
 (defn- value->db [value]
   (cond (action-types value) (-> value action-types name)
         (instance-statuses value) (-> value instance-statuses name)
+        (keyword? value) (-> value name)
         :default value))
 
 (defn clj->db [value]

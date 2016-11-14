@@ -1,8 +1,6 @@
 (ns nflow-clj.engine
-  (:require [nflow-clj.database.connection-pool :as pool]
-            [nflow-clj.database.executors :as executors]
+  (:require [nflow-clj.database.executors :as executors]
             [nflow-clj.database.instances :as instances]
-            [nflow-clj.database.definitions :as definitions]
             [nflow-clj.util :as util]
             [clj-time.core :as time]
             [clojure.tools.logging :as log]
@@ -34,20 +32,20 @@
   (log/warn "No process state found for workflow" workflow)
   )
 
-(defn- create-context [config db process workflow]
-  ;; TODO fetch full workflow from db
+(defn- create-context [config executor-id db process workflow]
   (let [type (:type process)
-        full-workflow workflow]
+        full-workflow (instances/get-workflow db (:id workflow))]
     {
      :process  process
      :workflow full-workflow
+     :executor-id executor-id
      :config   (-> config :workflows type)
      }))
 
 (defn- find-current-state [process workflow-state]
+  (log/info "find" workflow-state process )
   (let [states (:states process)]
     (first (filter (fn [state]
-                     (log/info "check state" (:state-id state) (keyword workflow-state))
                      (= (:state-id state) (keyword workflow-state)))
                    states))))
 
@@ -56,26 +54,33 @@
   ;; TODO mark executed
   )
 
-(defn- make-action [ctx response])
-
 (defn- error-retry-delay [config ctx response]
   (let [retries (or (-> ctx :workflow :retries) 0)
         retry-delay (or (-> ctx :config :retry-delay)
                         (-> config :engine :retry-delay))]
-    (log/info retry-delay retries)
-    (log/info (Math/pow retry-delay (inc retries)))
-
     (time/plus (time/now)
-               (time/millis (Math/pow retry-delay (inc retries))))))
+               (time/millis (* retry-delay (Math/pow 2 (inc retries)))))))
 
-(defn- make-updated-workflow [config ctx response]
+(defn- process-step-delay [config ctx response]
+  (let [now (time/now)
+        next-activation (:next-activation response)]
+    (cond (not next-activation) now
+          (.isAfter now next-activation) now
+          :default next-activation)))
+
+(defn- make-updated-workflow [config ctx process response]
   (let [workflow (:workflow ctx)
         retries (or (:retries workflow) 0)]
     (if (:error response)
       (assoc workflow :next-activation (error-retry-delay config ctx response)
                       :retries (inc retries))
-      (assoc workflow :next-activation (error-retry-delay config ctx response)
-                      :retries (inc retries))
+      ;; TODO normal delay
+      (let [new-process-state (find-current-state process (:next-state response))]
+        (assoc workflow :next-activation (process-step-delay config ctx response)
+                        :state (or (:next-state response) (:state workflow))
+                        :retries 0
+                        :status (or (:status new-process-state) :nflow-instance-type/manual)
+                        :executor-id nil))
       )))
 
 (defn- execute-catch [execute-fn ctx]
@@ -84,36 +89,49 @@
     (catch Exception e
       {:error e})))
 
-(defn- execute-processing-state [config db executor-id ctx process-state]
-  (log/info "Processing state" ctx)
-  (let [execution-started (System/currentTimeMillis)
-        execute-fn (:execute-fn process-state)
-        response (execute-catch execute-fn ctx)
-        execution-end (System/currentTimeMillis)
-        workflow (:workflow ctx)
-        updated-workflow (make-updated-workflow config ctx response)
-        variables (:variables response)
-        action nil]
-    (instances/update-workflow-after-execution! db executor-id updated-workflow action variables)
-    )
+(defn- make-action [ctx process-state response start end]
+  (log/info process-state)
+  (let [action-type (if (:error response)
+                      :nflow-action-type/stateExecutionFailed
+                      :nflow-action-type/stateExecution)]
+    {:execution-start start
+     :execution_end   end
+     :executor-id     (:executor-id ctx)
+     :type            action-type
+     :state           (:state-id process-state)
+     :state-text      (:state-text response)
+     :retry-no        (inc (-> ctx :workflow :retries))
+     }))
+
+(defn validate-response [ctx process-state response]
+
   )
 
-(defn- execute-process-state [config db executor-id ctx process-state]
-  (cond (:execute-fn process-state) (execute-processing-state config db executor-id ctx process-state)
-        :default (execute-idle-state db ctx))
-  )
+(defn- execute-processing-state [config db ctx process process-state]
+  (let [execution-started (time/now)
+        execute-fn (:execute-fn process-state)
+        response (execute-catch execute-fn ctx)
+        execution-end (time/now)
+        _ (validate-response ctx process-state response)
+        updated-workflow (make-updated-workflow config ctx process response)
+        variables (:variables response)
+        action (make-action ctx process-state response execution-started execution-end)
+        executor-id (:executor-id ctx)]
+    (instances/update-workflow-after-execution! db executor-id updated-workflow action variables)
+    ))
+
+(defn- execute-process-state [config db ctx process process-state]
+  (cond (:execute-fn process-state) (execute-processing-state config db ctx process process-state)
+        :default (execute-idle-state db ctx)))
 
 (defn- execute-process [config executor-id db process workflow]
   (let [{:keys [name type]} process
-        ctx (create-context config db process workflow)
-        _ (log/info "ww" workflow)
+        ctx (create-context config executor-id db process workflow)
         state (:state workflow)
-        process-state (find-current-state process state)
-        {:keys [execute-fn next-states status]} process-state
-        ]
+        process-state (find-current-state process state)]
     (try
       (cond (not process-state) (state-not-found process workflow)
-            :default (execute-process-state config db executor-id ctx process-state))
+            :default (execute-process-state config db ctx process process-state))
       (catch Exception e
         (log/error e (str "Processing of " name ": " type " failed."))
         ;; TODO handle retry
@@ -149,7 +167,8 @@
                        (work-sleep config))
             ))))
 
-(def running (atom 5))
+;; TODO limits running to N polls
+(def running (atom 10))
 (defn- running? [config]
   (swap! running dec)
   (> @running 0))
@@ -170,8 +189,7 @@
         (poll-workflows config executor-id executor-thread-pool db processes))
       (log/info "Polling stopped. Waiting for nflow-executor threads to finish.")
       ))
-  (log/info "Executor threads stopped")
-  )
+  (log/info "Executor threads stopped"))
 
 (defn validate-processes [processes]
   true)

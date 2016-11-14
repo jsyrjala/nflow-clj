@@ -4,7 +4,7 @@
             ))
 
 (defn start [ctx]
-  (log/info "start")
+  (log/info "start" (-> ctx :workflow :workflow-id))
   {:next-state :read-subscription
    :next-activation (time/now)})
 
@@ -54,7 +54,7 @@
                         :next-states [:read-subcription]
                         :status :nflow-instance-type/inProgress
                         }
-                       {:state-id :read-subcription
+                       {:state-id :read-subscription
                         :name "lue tilaus"
                         :execute-fn read-subscription
                         :next-states [:update-accounting :manual-handling]
